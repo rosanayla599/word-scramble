@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pastel Word Scramble — Countries, Foods & Animals</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;700;800&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1: #FFEEF8; /* pastel pink */
+      --bg2: #E8FBFF; /* pastel blue */
+      --mint: #E8FFF2;
+      --lav: #F3E8FF;
+      --card:#ffffffcc;
+      --muted:#6b6b6b;
+      --accent:#8AA4FF;
+      --radius:18px;
+      --shadow: 0 10px 30px rgba(15,20,30,0.08);
+      --glass: rgba(255,255,255,0.6);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: 'Nunito', 'Poppins', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      -webkit-font-smoothing:antialiased;
+    }
+    .container{
+      width:100%;
+      max-width:980px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.55));
+      border-radius:24px;
+      padding:22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px) saturate(1.05);
+    }
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .title{
+      display:flex;align-items:center;gap:14px;
+    }
+    .logo{
+      width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--mint),var(--lav));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#4b4b4b;box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+    }
+    h1{font-size:20px;margin:0;color:#3b3b3b}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .controls{
+      display:flex;gap:8px;align-items:center;
+    }
+    .btn{background:var(--card);border:none;padding:10px 14px;border-radius:14px;cursor:pointer;box-shadow:0 6px 18px rgba(120,120,120,0.06);font-weight:700}
+    .btn.ghost{background:transparent;border:1px solid rgba(120,120,120,0.08)}
+    .btn.primary{background:linear-gradient(90deg,var(--accent), #bdb9ff);color:white}
+
+    .meta{display:flex;gap:12px;align-items:center}
+    .score, .timer{background:var(--glass);padding:8px 12px;border-radius:12px;font-weight:600}
+
+    main{margin-top:18px;display:grid;grid-template-columns:1fr 360px;gap:18px}
+
+    /* left play area */
+    .playcard{background:var(--card);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+    .category-row{display:flex;gap:8px;margin-bottom:12px}
+    .chip{padding:8px 12px;border-radius:12px;cursor:pointer;font-weight:700}
+    .chip.active{box-shadow:0 8px 20px rgba(140,120,200,0.08);}
+
+    .scramble-area{display:flex;flex-direction:column;gap:12px;align-items:center}
+    .tile-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+    .tile{min-width:54px;height:54px;border-radius:12px;background:linear-gradient(180deg,#ffffff, #fffafc);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;cursor:pointer;box-shadow:0 6px 18px rgba(80,80,80,0.06)}
+    .tile.hidden{opacity:0.12}
+
+    .answer{min-height:64px;border-radius:12px;border:2px dashed rgba(120,120,120,0.06);display:flex;gap:8px;padding:10px;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));}
+    .slot{min-width:48px;height:48px;border-radius:10px;background:transparent;display:flex;align-items:center;justify-content:center;font-weight:800;color:#333}
+
+    .right-panel{display:flex;flex-direction:column;gap:12px}
+    .panel{background:var(--card);padding:16px;border-radius:14px}
+
+    footer{margin-top:14px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* small screens */
+    @media (max-width:880px){main{grid-template-columns:1fr;}
+      .right-panel{order:2}
+    }
+
+    /* confetti */
+    .confetti-piece{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;width:10px;height:18px;border-radius:2px;opacity:0}
+
+    /* subtle animations */
+    .pop{transform:scale(1.06);transition:transform .16s}
+    .shake{animation:shake .36s}
+    @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <div class="logo">PWS</div>
+        <div>
+          <h1>Pastel Word Scramble</h1>
+          <p class="lead">Theme: Countries · Foods · Animals — English words · Pastel UI</p>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="meta">
+          <div class="score">Score: <span id="score">0</span></div>
+          <div class="timer">Time: <span id="timer">00:00</span></div>
+        </div>
+        <button class="btn ghost" id="btnShuffle">Shuffle</button>
+        <button class="btn" id="btnHint">Hint</button>
+        <button class="btn primary" id="btnNew">New</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="playcard">
+        <div class="category-row">
+          <div class="chip active" data-cat="countries">Countries</div>
+          <div class="chip" data-cat="foods">Foods</div>
+          <div class="chip" data-cat="animals">Animals</div>
+        </div>
+
+        <div class="scramble-area">
+          <div class="tile-row" id="tiles"></div>
+          <div class="answer" id="answerArea"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <button class="btn ghost" id="btnUndo">Undo</button>
+            <button class="btn" id="btnSubmit">Submit</button>
+            <div style="margin-left:10px;color:var(--muted);font-size:13px">Tip: tap letters to place, tap placed letters to return</div>
+          </div>
+        </div>
+
+      </section>
+
+      <aside class="right-panel">
+        <div class="panel">
+          <h3 style="margin:0 0 8px 0">Settings</h3>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <label style="font-weight:700">Difficulty</label>
+            <select id="difficulty">
+              <option value="easy">Easy (4-5)</option>
+              <option value="medium" selected>Medium (6-7)</option>
+              <option value="hard">Hard (8+)</option>
+            </select>
+          </div>
+          <div style="font-size:13px;color:var(--muted)">Streak bonus & timer reward active. Words are English only.</div>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin:0 0 8px 0">How to Play</h3>
+          <ol style="margin:0 0 0 18px;color:var(--muted)">
+            <li>Choose a category (Countries, Foods, Animals).</li>
+            <li>Arrange the scrambled letters to form a valid word in English.</li>
+            <li>Use Hint to reveal one letter. Shuffle to reshuffle tiles.</li>
+          </ol>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin:0 0 8px 0">Example words</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span class="chip">Japan</span>
+            <span class="chip">Pizza</span>
+            <span class="chip">Tiger</span>
+            <span class="chip">Brazil</span>
+            <span class="chip">Sushi</span>
+          </div>
+        </div>
+
+      </aside>
+    </main>
+
+    <footer>Made with pastel love 💖 — Save this file as <code>pastel-word-scramble.html</code> and open in a browser.</footer>
+  </div>
+
+  <script>
+    /* Word lists (English) — add more words easily */
+    const WORDS = {
+      countries: ["japan","brazil","egypt","canada","turkey","france","norway","sweden","india","china","spain","germany","italy","portugal","egypt"],
+      foods: ["pizza","bread","sushi","burger","taco","pasta","donut","salad","noodle","curry","ramen","bagel","waffle","pancake","cheese"],
+      animals: ["tiger","rabbit","eagle","dolphin","panda","snake","camel","monkey","elephant","giraffe","penguin","otter","koala","leopard","rhino"]
+    };
+
+    // UI refs
+    const tilesEl = document.getElementById('tiles');
+    const answerArea = document.getElementById('answerArea');
+    const chips = document.querySelectorAll('.chip');
+    const btnShuffle = document.getElementById('btnShuffle');
+    const btnHint = document.getElementById('btnHint');
+    const btnNew = document.getElementById('btnNew');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const btnUndo = document.getElementById('btnUndo');
+    const scoreEl = document.getElementById('score');
+    const timerEl = document.getElementById('timer');
+    const difficultySel = document.getElementById('difficulty');
+
+    let state = {
+      category:'countries',
+      word:'',
+      scrambled:[],
+      placed:[],
+      score:0,
+      streak:0,
+      timer:0,
+      running:false,
+      interval:null
+    };
+
+    // helper: pick word by difficulty
+    function pickWord(cat, diff){
+      const pool = WORDS[cat].slice();
+      // filter by length
+      const byLen = pool.filter(w => {
+        if(diff==='easy') return w.length>=4 && w.length<=5;
+        if(diff==='medium') return w.length>=6 && w.length<=7;
+        return w.length>=8;
+      });
+      const list = byLen.length?byLen:pool; // fallback
+      return list[Math.floor(Math.random()*list.length)];
+    }
+
+    function scramble(word){
+      const arr = word.split('');
+      // Fisher-Yates
+      for(let i=arr.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+      }
+      // ensure not identical
+      if(arr.join('')===word){
+        const j = Math.floor(Math.random()*arr.length);
+        [arr[0],arr[j]]=[arr[j],arr[0]];
+      }
+      return arr;
+    }
+
+    function startNew(){
+      const diff = difficultySel.value;
+      state.word = pickWord(state.category, diff).toLowerCase();
+      state.scrambled = scramble(state.word);
+      state.placed = Array(state.word.length).fill(null);
+      renderTiles();
+      renderAnswer();
+      if(state.interval) clearInterval(state.interval);
+      state.timer = 0; state.running = true;
+      timerEl.textContent = formatTime(state.timer);
+      state.interval = setInterval(()=>{
+        state.timer++;
+        timerEl.textContent = formatTime(state.timer);
+      },1000);
+    }
+
+    function renderTiles(){
+      tilesEl.innerHTML = '';
+      state.scrambled.forEach((ch, idx)=>{
+        const t = document.createElement('div');
+        t.className='tile';
+        t.textContent = ch.toUpperCase();
+        t.dataset.idx = idx;
+        t.addEventListener('click', ()=>placeLetter(idx));
+        tilesEl.appendChild(t);
+      });
+    }
+
+    function renderAnswer(){
+      answerArea.innerHTML='';
+      state.placed.forEach((ch, idx)=>{
+        const s = document.createElement('div');
+        s.className='slot';
+        s.dataset.pos = idx;
+        s.textContent = ch?ch.toUpperCase():'';
+        if(ch){
+          s.addEventListener('click', ()=>unplaceLetter(idx));
+        }
+        answerArea.appendChild(s);
+      });
+    }
+
+    function placeLetter(scrIdx){
+      // find next empty slot
+      const next = state.placed.indexOf(null);
+      if(next===-1) return; // full
+      const letter = state.scrambled[scrIdx];
+      if(!letter) return;
+      state.placed[next]=letter;
+      state.scrambled[scrIdx]=null;
+      renderTiles(); renderAnswer();
+    }
+
+    function unplaceLetter(pos){
+      // return to first empty tile slot
+      const letter = state.placed[pos];
+      if(!letter) return;
+      state.placed[pos]=null;
+      // put back into scrambled at first null index or push
+      const idx = state.scrambled.indexOf(null);
+      if(idx!==-1){ state.scrambled[idx]=letter; }
+      else { state.scrambled.push(letter); }
+      renderTiles(); renderAnswer();
+    }
+
+    function undoLast(){
+      const lastPos = state.placed.map((v,i)=>v?i:-1).filter(i=>i>-1).pop();
+      if(lastPos===undefined) return;
+      unplaceLetter(lastPos);
+    }
+
+    function submit(){
+      const attempt = state.placed.map(c=>c||'').join('');
+      if(attempt.length !== state.word.length) {
+        flash(answerArea, 'shake');
+        return;
+      }
+      if(attempt===state.word){
+        // success
+        state.score += Math.max(10, 50 - state.timer); // scoring
+        state.streak += 1;
+        scoreEl.textContent = state.score;
+        showSuccess();
+        clearInterval(state.interval); state.running=false;
+      } else {
+        // wrong
+        state.streak = 0;
+        flash(answerArea,'shake');
+      }
+    }
+
+    function showSuccess(){
+      // confetti
+      makeConfetti();
+      // highlight success
+      answerArea.classList.add('pop');
+      setTimeout(()=>answerArea.classList.remove('pop'),400);
+      // reveal correct
+      state.placed = state.word.split('');
+      renderAnswer();
+    }
+
+    function flash(el, cls){
+      el.classList.add(cls);
+      setTimeout(()=>el.classList.remove(cls),420);
+    }
+
+    function shuffleTiles(){
+      // take leftover letters and reshuffle
+      const leftover = state.scrambled.filter(Boolean);
+      for(let i=leftover.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [leftover[i],leftover[j]]=[leftover[j],leftover[i]];
+      }
+      // refill scrambled in order
+      let k=0;
+      for(let i=0;i<state.scrambled.length;i++){
+        if(state.scrambled[i]===null){ state.scrambled[i]=leftover[k++] || null }
+      }
+      renderTiles();
+    }
+
+    function hint(){
+      // reveal one correct letter into the first empty slot
+      const emptyPos = state.placed.indexOf(null);
+      if(emptyPos===-1) return;
+      const correctLetter = state.word[emptyPos];
+      // find that letter in scrambled
+      const idx = state.scrambled.indexOf(correctLetter);
+      if(idx!==-1){
+        placeLetter(idx);
+        // penalty
+        state.score = Math.max(0, state.score-5);
+        scoreEl.textContent = state.score;
+      } else {
+        // maybe letter is elsewhere in placed incorrectly -> try to swap
+        // as fallback, reveal correct letter directly
+        state.placed[emptyPos]=correctLetter;
+        renderAnswer();
+      }
+    }
+
+    function formatTime(s){
+      const mm = String(Math.floor(s/60)).padStart(2,'0');
+      const ss = String(s%60).padStart(2,'0');
+      return mm+':'+ss;
+    }
+
+    // confetti generator (simple) — no external libs
+    function makeConfetti(){
+      const colors = ['#FFD1DC','#CDE7FF','#DFFFE4','#F3D9FF','#FFF5C3'];
+      const count = 30;
+      for(let i=0;i<count;i++){
+        const el = document.createElement('div');
+        el.className='confetti-piece';
+        el.style.background = colors[Math.floor(Math.random()*colors.length)];
+        el.style.left = Math.random()*100 + '%';
+        el.style.top = '-10px';
+        el.style.transform = 'rotate('+ (Math.random()*360) +'deg)';
+        document.body.appendChild(el);
+        // animate
+        const dur = 1200 + Math.random()*800;
+        el.animate([
+          {transform: `translateY(0) rotate(${Math.random()*360}deg)`, opacity:1},
+          {transform: `translateY(${window.innerHeight*Math.random()}px) rotate(${Math.random()*720}deg)`, opacity:0}
+        ],{duration:dur, easing:'cubic-bezier(.2,.6,.2,1)'});
+        setTimeout(()=>el.remove(), dur+50);
+      }
+    }
+
+    // init listeners
+    chips.forEach(c=>c.addEventListener('click', ()=>{
+      chips.forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+      state.category = c.dataset.cat;
+      startNew();
+    }));
+
+    btnNew.addEventListener('click', ()=>startNew());
+    btnShuffle.addEventListener('click', ()=>shuffleTiles());
+    btnHint.addEventListener('click', ()=>hint());
+    btnSubmit.addEventListener('click', ()=>submit());
+    btnUndo.addEventListener('click', ()=>undoLast());
+
+    difficultySel.addEventListener('change', ()=>startNew());
+
+    // keyboard support
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') submit();
+      if(e.key === 'Backspace') undoLast();
+    });
+
+    // start
+    startNew();
+  </script>
+</body>
+</html>
